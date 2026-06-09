@@ -1,365 +1,167 @@
-# FreeDeepseekAPI
+# nithcode
 
-<p align="center">
-  <strong>Локальный OpenAI-compatible API proxy для DeepSeek Web Chat</strong>
-</p>
+Terminal UI coding agent powered by DeepSeek Web API. A Claude Code alternative that works through a local proxy.
 
-<p align="center">
-  <a href="https://github.com/ForgetMeAI/FreeDeepseekAPI/blob/main/LICENSE"><img alt="License MIT" src="https://img.shields.io/badge/license-MIT-green.svg" /></a>
-  <img alt="Node.js 18 plus" src="https://img.shields.io/badge/node-18%2B-339933.svg" />
-  <img alt="No npm dependencies" src="https://img.shields.io/badge/dependencies-0-blue.svg" />
-  <img alt="OpenAI compatible" src="https://img.shields.io/badge/OpenAI-compatible-111111.svg" />
-</p>
+## Features
 
-<p align="center">
-  <a href="#-быстрый-старт">Быстрый старт</a> •
-  <a href="#-возможности">Возможности</a> •
-  <a href="#-примеры-запросов">Примеры</a> •
-  <a href="#-модели">Модели</a> •
-  <a href="#-endpoints">Endpoints</a> •
-  <a href="#-open-webui">Open WebUI</a>
-</p>
+- **Terminal UI** — Full-screen chat interface with ANSI colors
+- **Markdown Rendering** — Code blocks, bold, italic, inline code highlighting
+- **Tool Execution** — Read/write files, patch code, list directories, run commands
+- **Permission System** — Ask before executing tools or bypass for automation
+- **Model Switching** — Switch between DeepSeek models on the fly (`/model`)
+- **Reasoning Display** — View model's thinking process (Ctrl+O)
+- **Server Logs** — Monitor proxy logs in real-time (Ctrl+J)
+- **Session Management** — Clear chat with `/new`
 
-FreeDeepseekAPI поднимает локальный API-сервер для **DeepSeek Web Chat** (`chat.deepseek.com`) и позволяет подключать DeepSeek Web к Open WebUI, LiteLLM, Hermes, Claude Code, OpenAI SDK-style клиентам и другим OpenAI-compatible инструментам.
+## Prerequisites
 
-Проект работает через ваш обычный залогиненный аккаунт DeepSeek в отдельном Chrome-профиле. Локальный сервер принимает API-запросы, а дальше сам ходит в DeepSeek Web через сохранённую browser-сессию.
+1. **Node.js** v18+ installed
+2. **FreeDeepseekAPI** proxy running on `localhost:9655`
+3. **Chrome** browser (for proxy authentication)
 
-> ⚠️ Это экспериментальный web-chat proxy. DeepSeek может менять внутренний Web API без предупреждения. Для production-кейсов надёжнее официальный платный API DeepSeek.
-
-ForgetMeAI: https://t.me/forgetmeai
-
----
-
-## Навигация
-
-- [Что это даёт](#-что-это-даёт)
-- [Возможности](#-возможности)
-- [Быстрый старт](#-быстрый-старт)
-- [Windows запуск](#-windows-запуск)
-- [Linux / Chromium запуск](#-linux--chromium-запуск)
-- [VPS / headless запуск](#-vps--headless-запуск)
-- [Diagnostics / doctor](#-diagnostics--doctor)
-- [Session reuse и сброс чатов](#-session-reuse-и-сброс-чатов)
-- [Multi-account pool](#-multi-account-pool)
-- [Идеи для консольной авторизации](#-идеи-для-консольной-авторизации)
-- [Проверка работы](#-проверка-работы)
-- [Примеры запросов](#-примеры-запросов)
-  - [Chat Completions](#chat-completions)
-  - [Reasoning](#reasoning)
-  - [Web search](#web-search)
-  - [Streaming](#streaming)
-  - [Anthropic Messages API](#anthropic-messages-api)
-  - [OpenAI Responses API](#openai-responses-api)
-  - [Tool calling](#tool-calling)
-- [Модели](#-модели)
-- [Endpoints](#-endpoints)
-- [Open WebUI](#-open-webui)
-- [Обновить логин](#-обновить-логин)
-- [Статус проекта](#-статус-проекта)
-
----
-
-## ✨ Что это даёт
-
-- Использовать DeepSeek Web как локальный API endpoint.
-- Подключать DeepSeek к Open WebUI и другим OpenAI-compatible клиентам.
-- Получать обычные JSON-ответы или streaming SSE.
-- Использовать reasoning-модели с отдельным `reasoning_content`.
-- Работать с Anthropic Messages API shim для Claude Code / Anthropic SDK.
-- Использовать OpenAI Responses API shim для новых OpenAI/Codex-style клиентов.
-- Держать отдельные web-сессии для разных агентов/users.
-
-## 🚀 Возможности
-
-- **OpenAI-compatible API:** `POST /v1/chat/completions`
-- **Anthropic-compatible shim:** `POST /v1/messages`
-- **OpenAI Responses shim:** `POST /v1/responses`
-- **Streaming:** SSE chunks и обычные non-stream JSON-ответы
-- **Reasoning output:** отдельный `reasoning_content` для thinking-моделей
-- **Tool calling:** парсинг OpenAI tools, Anthropic tools и Responses function tools
-- **Model capabilities:** `GET /v1/model-capabilities` с alias → real web mode
-- **Agent sessions:** отдельная DeepSeek-сессия на `user` / agent id
-- **Session recovery:** авто-сброс устаревших chains/sessions
-- **Zero dependencies:** Node.js 18+, без npm-зависимостей
-
----
-
-## ⚡ Быстрый старт
+## Installation
 
 ```bash
+# Clone the repository
 git clone https://github.com/ForgetMeAI/FreeDeepseekAPI.git
 cd FreeDeepseekAPI
-npm run auth
-npm start
+
+# Install dependencies
+npm install
+
+# Make nithcode globally available
+npm link
 ```
 
-`npm run auth` открывает меню авторизации:
+Or manually copy `nithcode.js` and create a batch/shell script.
 
-1. выберите пункт `1`;
-2. войдите в DeepSeek в отдельном Chrome-профиле;
-3. отправьте короткое сообщение вроде `ok`;
-4. вернитесь в терминал и нажмите Enter.
+## Quick Start
 
-`npm start` показывает меню запуска:
+### 1. Start the Proxy Server
 
-- `1` — авторизоваться / обновить DeepSeek login
-- `2` — показать модели и статусы
-- `3` — запустить proxy
-- `4` — выйти
-
-Для headless/CI-запуска без меню:
+In one terminal:
 
 ```bash
-NON_INTERACTIVE=1 npm start
-# или
-SKIP_ACCOUNT_MENU=1 npm start
-```
-
-По умолчанию сервер слушает:
-
-```text
-http://localhost:9655
-```
-
----
-
-## 🪟 Windows запуск
-
-```powershell
-git clone https://github.com/ForgetMeAI/FreeDeepseekAPI.git
 cd FreeDeepseekAPI
-npm run auth
-npm start
+node server.js
 ```
 
-Если Chrome установлен нестандартно, явно укажите путь:
+Select option **3 (Start Server)** in the menu.
 
-```powershell
-$env:CHROME_PATH="C:\Program Files\Google\Chrome\Application\chrome.exe"
-npm run auth
-```
+### 2. Authenticate (First Time)
 
-Если Chrome не найден, `npm run auth` теперь печатает готовые инструкции для Windows/macOS/Linux вместо загадочного stack trace.
-
----
-
-## 🐧 Linux / Chromium запуск
+If you haven't authenticated yet:
 
 ```bash
-git clone https://github.com/ForgetMeAI/FreeDeepseekAPI.git
-cd FreeDeepseekAPI
-CHROME_PATH=$(which chromium) npm run auth
-npm start
+npm run deepseek:auth
 ```
 
-Если Chromium называется иначе:
+This will open Chrome and save cookies for API access.
+
+### 3. Launch nithcode
+
+In another terminal:
 
 ```bash
-CHROME_PATH=$(which chromium-browser) npm run auth
-# или
-CHROME_PATH=$(which google-chrome) npm run auth
+nithcode
 ```
 
----
-
-## 🖥 VPS / headless запуск
-
-Самый надёжный flow без Chrome на сервере:
-
-1. На домашнем ПК, где есть GUI/Chrome:
+Or with specific model:
 
 ```bash
-npm run auth
+nithcode --model deepseek-v4-pro
 ```
 
-2. Скопируйте `deepseek-auth.json` на VPS:
+## Usage
+
+### Commands
+
+| Command | Description |
+|---------|-------------|
+| `/model` | Open model selection menu |
+| `/new` | Clear conversation history |
+| `Ctrl+C` | Exit |
+| `Ctrl+O` | Toggle reasoning overlay (thinking models) |
+| `Ctrl+J` | Toggle server logs |
+| `Ctrl+L` | Clear screen |
+
+### Permission Modes
+
+- **ask** (default) — Confirm each tool execution
+- **bypassPermissions** — Auto-approve all tools
+
+Launch with bypass mode:
 
 ```bash
-scp deepseek-auth.json user@your-vps:/opt/FreeDeepseekAPI/deepseek-auth.json
+nithcode --permission-mode bypassPermissions
 ```
 
-3. На VPS импортируйте/проверьте файл и выставьте безопасные права:
+### Environment Variables
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `NITHCODE_MODEL` | `deepseek-chat` | Default model |
+| `NITHCODE_BASE_URL` | `http://localhost:9655/v1` | API endpoint |
+| `NITHCODE_API_KEY` | `nithcode-local` | API key |
+| `NITHCODE_PERMISSION_MODE` | `ask` | Permission mode |
+| `NITHCODE_MAX_TOKENS` | `8192` | Max tokens per request |
+
+### Available Models
+
+- `deepseek-chat` — General chat
+- `deepseek-v3` — Latest V3 model
+- `deepseek-reasoner` — Thinking/reasoning model
+- `deepseek-r1` — R1 reasoning model
+- `deepseek-v4-pro` — V4 Pro with reasoning
+- `deepseek-chat-search` — Chat with web search
+- `deepseek-expert` — Expert mode
+
+## Architecture
+
+```
+┌─────────────┐     HTTP      ┌──────────────────┐     WebSocket     ┌─────────────┐
+│  nithcode   │ ◄────────────► │ FreeDeepseekAPI  │ ◄───────────────► │  DeepSeek   │
+│  (client)   │   localhost    │   (proxy)        │   cookies/auth    │   (web)     │
+└─────────────┘    :9655       └──────────────────┘                   └─────────────┘
+```
+
+## Troubleshooting
+
+### "Server not running"
+
+Make sure FreeDeepseekAPI server is started in another terminal:
 
 ```bash
-cd /opt/FreeDeepseekAPI
-npm run auth:import -- --input ./deepseek-auth.json
-npm run doctor -- --offline
+node server.js
+# Select 3 (Start Server)
 ```
 
-4. Запускайте proxy без интерактивного меню:
+### "Model returned empty response"
+
+- Check proxy logs with `Ctrl+J`
+- Verify cookies are valid: `npm run deepseek:auth`
+- Try switching model: `/model`
+
+### "EADDRINUSE: address already in use"
+
+Port 9655 is occupied. Kill existing Node processes:
 
 ```bash
-NON_INTERACTIVE=1 npm start
+# Windows
+taskkill /F /IM node.exe
+
+# Linux/Mac
+killall node
 ```
 
-Можно импортировать не только готовый `deepseek-auth.json`, но и browser cookie export:
+## License
 
-```bash
-DEEPSEEK_TOKEN="<token>" npm run auth:import -- --input ./cookies.json
-```
+MIT — see [LICENSE](LICENSE)
 
-> Важно: `deepseek-auth.json` — это доступ к вашему DeepSeek Web login. Не коммитьте, не публикуйте, храните с правами `0600`.
+## Credits
 
----
-
-## 🩺 Diagnostics / doctor
-
-```bash
-npm run doctor
-# без сетевых запросов к DeepSeek:
-npm run doctor -- --offline
-```
-
-`doctor` проверяет:
-
-- найден ли `deepseek-auth.json` / `DEEPSEEK_AUTH_DIR`;
-- валидный ли JSON;
-- есть ли `token`, `cookie`, `wasmUrl`;
-- безопасные ли права файла на macOS/Linux (`0600`);
-- при обычном запуске — доступен ли DeepSeek PoW endpoint.
-
-Если видите `data.biz_data is null`, `fetch failed`, `401/403/429` или Hermes/OpenCode не видит модели — первым делом запускайте `npm run doctor`.
-
----
-
-## ♻️ Session reuse и сброс чатов
-
-FreeDeepseekAPI не создаёт новый DeepSeek чат на каждый HTTP-запрос без причины. Логика такая:
-
-- один `x-agent-session`, `session` или `user` → одна DeepSeek chat session;
-- если session id уже есть — proxy переиспользует его и продолжает chain через `parent_message_id`;
-- auto-reset происходит при TTL, ошибке DeepSeek session или слишком длинной цепочке сообщений;
-- локальная history сохраняется коротким контекстом, чтобы новая DeepSeek session могла продолжить разговор.
-
-Явно задать agent/session:
-
-```bash
-curl -X POST http://localhost:9655/v1/chat/completions \
-  -H "Content-Type: application/json" \
-  -H "x-agent-session: my-agent" \
-  -d '{"model":"deepseek-chat","messages":[{"role":"user","content":"Привет"}]}'
-```
-
-Посмотреть активные sessions:
-
-```bash
-curl http://localhost:9655/v1/sessions
-```
-
-Сбросить одну session:
-
-```bash
-curl -X POST "http://localhost:9655/reset-session?agent=my-agent"
-```
-
-Сбросить все sessions:
-
-```bash
-curl -X POST "http://localhost:9655/reset-session?agent=all"
-```
-
-Почему чаты всё равно появляются в DeepSeek Web: proxy работает через внутренний Web Chat API, а DeepSeek хранит реальные chat sessions у себя. Это нормально для web-proxy. Задача session reuse — не плодить новые чаты без необходимости и аккуратно сбрасываться только когда chain протух/сломался.
-
----
-
-## 👥 Multi-account pool
-
-Можно подключить несколько auth-файлов. Правильная модель: sticky account per agent/session — proxy не переключает аккаунт внутри живой DeepSeek-сессии. Если аккаунт получил `401/403/429` и ушёл в cooldown, session безопасно сбрасывается и новый запрос может перейти на другой доступный аккаунт.
-
-Вариант 1 — директория с auth-файлами:
-
-```bash
-mkdir -p accounts
-cp deepseek-auth-main.json accounts/main.json
-cp deepseek-auth-backup.json accounts/backup.json
-chmod 600 accounts/*.json
-DEEPSEEK_AUTH_DIR=./accounts NON_INTERACTIVE=1 npm start
-```
-
-Вариант 2 — список файлов:
-
-```bash
-DEEPSEEK_AUTH_PATH="./accounts/main.json,./accounts/backup.json" NON_INTERACTIVE=1 npm start
-```
-
-Как работает pool:
-
-- новый agent/session получает доступный аккаунт round-robin;
-- выбранный аккаунт закрепляется за session (`sticky`);
-- при `401`, `403`, `429` аккаунт уходит в cooldown;
-- если sticky-аккаунт session ушёл в cooldown, старая DeepSeek-сессия сбрасывается, чтобы не долбить rate-limited/expired аккаунт;
-- статус аккаунтов виден в `/health` без путей к auth-файлам и без имён файлов;
-- auth-файлы должны храниться с правами `0600`.
-
-Настроить cooldown:
-
-```bash
-DEEPSEEK_ACCOUNT_COOLDOWN_MS=600000 npm start
-```
-
----
-
-## 🔑 Идеи для консольной авторизации
-
-Парольный flow из PR #3 можно делать, но безопаснее не хранить пароль и не делать это дефолтом. Нормальная реализация:
-
-1. `npm run auth:console` спрашивает email/телефон и пароль через hidden prompt.
-2. Пароль держится только в памяти процесса, не пишется в файлы/logs/history.
-3. Скрипт повторяет Web login flow через `fetch`/CDP: получает captcha/verify challenge, отдаёт человеку ссылку/код, ждёт подтверждение.
-4. После успешного login сохраняется только `deepseek-auth.json` стандартного формата.
-5. Если DeepSeek просит captcha/2FA — скрипт честно говорит “открой ссылку, пройди проверку, нажми Enter”, а не пытается обходить защиту.
-6. Для VPS лучше режим `auth:console --no-save-password --output deepseek-auth.json`.
-
-Минимальный безопасный MVP: console auth только интерактивный, без env-пароля. Допустимый automation-вариант: `DEEPSEEK_EMAIL=... npm run auth:console`, но пароль всё равно вводится hidden prompt.
-
----
-
-## ✅ Проверка работы
-
-```bash
-curl http://localhost:9655/
-curl http://localhost:9655/v1/models
-curl http://localhost:9655/v1/model-capabilities
-```
-
-Если всё ок, `/health` вернёт статус сервера, список поддерживаемых aliases и `config_ready: true`.
-
----
-
-## 🧪 Примеры запросов
-
-### Chat Completions
-
-```bash
-curl -X POST http://localhost:9655/v1/chat/completions \
-  -H "Content-Type: application/json" \
-  -d '{
-    "model": "deepseek-chat",
-    "messages": [{"role": "user", "content": "Привет! Ответь одной фразой."}],
-    "stream": false
-  }'
-```
-
-### Reasoning
-
-```bash
-curl -X POST http://localhost:9655/v1/chat/completions \
-  -H "Content-Type: application/json" \
-  -d '{
-    "model": "deepseek-reasoner",
-    "messages": [{"role": "user", "content": "Реши коротко: почему небо голубое?"}],
-    "stream": false
-  }'
-```
-
-Для reasoning-моделей API отдаёт цепочку размышления отдельно от финального ответа:
-
-- non-stream: `choices[0].message.reasoning_content`
-- stream: `choices[0].delta.reasoning_content`
-- usage: `usage.completion_tokens_details.reasoning_tokens`
-
-`reasoning_tokens` — приблизительная оценка по извлечённому DeepSeek Web `THINK`-тексту, потому что web stream не отдаёт официальный token usage по reasoning отдельно.
-
+- Original proxy: [ForgetMeAI/FreeDeepseekAPI](https://github.com/ForgetMeAI/FreeDeepseekAPI)
+- Powered by [DeepSeek](https://deepseek.com)
 ### Web search
 
 ```bash
